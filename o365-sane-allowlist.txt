@@ -1,0 +1,40 @@
+! Microsoft 365 "sane" allowlist for Pi-hole
+! Goal: allow core Microsoft 365 functionality (login, Outlook, Teams, SharePoint, OneDrive)
+! while avoiding broader telemetry/CDN domains where possible
+! Format: Adblock exception rules
+
+@@||aadcdn.microsoftonline-p.com^
+@@||aka.ms^
+@@||cloud.microsoft^
+@@||config.office.com^
+@@||live.com^
+@@||login.live.com^
+@@||lync.com^
+@@||mail.protection.outlook.com^
+@@||microsoft365.com^
+@@||microsoftonline-p.com^
+@@||microsoftonline.com^
+@@||msauth.net^
+@@||msauthimages.net^
+@@||msftidentity.com^
+@@||office.com^
+@@||office.live.com^
+@@||office.net^
+@@||office365.com^
+@@||officeapps.live.com^
+@@||officecdn.microsoft.com^
+@@||onedrive.com^
+@@||onenote.com^
+@@||onmicrosoft.com^
+@@||outlook.com^
+@@||outlook.office.com^
+@@||outlook.office365.com^
+@@||protection.outlook.com^
+@@||sharepoint.com^
+@@||sharepointonline.com^
+@@||skype.com^
+@@||skypeforbusiness.com^
+@@||static.microsoft^
+@@||storage.live.com^
+@@||teams.microsoft.com^
+@@||usercontent.microsoft^

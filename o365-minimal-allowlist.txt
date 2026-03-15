@@ -1,0 +1,23 @@
+! Microsoft 365 "minimal" allowlist for Pi-hole
+! Goal: allow login, identity, Outlook, and basic tenant routing only
+! Best for desktop Office / Outlook setups where Teams, SharePoint, and OneDrive web features are not required
+! Format: Adblock exception rules
+
+@@||aadcdn.microsoftonline-p.com^
+@@||aka.ms^
+@@||cloud.microsoft^
+@@||live.com^
+@@||login.live.com^
+@@||mail.protection.outlook.com^
+@@||microsoftonline-p.com^
+@@||microsoftonline.com^
+@@||msauth.net^
+@@||msauthimages.net^
+@@||msftidentity.com^
+@@||office.com^
+@@||office365.com^
+@@||onmicrosoft.com^
+@@||outlook.com^
+@@||outlook.office.com^
+@@||outlook.office365.com^
+@@||protection.outlook.com^

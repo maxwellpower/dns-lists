@@ -1,0 +1,45 @@
+name: Update O365 Allowlists
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 7 * * 1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-o365-allowlists
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run tests
+        run: python -m unittest discover -s tests
+
+      - name: Regenerate allowlists
+        run: python scripts/generate_o365_lists.py
+
+      - name: Validate generated files
+        run: python scripts/generate_o365_lists.py --validate-only
+
+      - name: Commit changes if needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/m365-endpoint-metadata.json o365-*-allowlist.txt
+          git diff --cached --quiet && exit 0
+          git commit -m "Update O365 allowlists"
+          git push
