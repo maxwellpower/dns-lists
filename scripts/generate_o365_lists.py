@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate and validate Microsoft 365 allow lists."""
+"""Generate managed Microsoft 365 DNS allow lists and validate repo lists."""
 
 from __future__ import annotations
 
@@ -19,9 +19,14 @@ from typing import Iterable, Sequence
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
 LIST_SPECS = {
-    "minimal": REPO_ROOT / "o365-minimal-allowlist.txt",
-    "sane": REPO_ROOT / "o365-sane-allowlist.txt",
-    "full": REPO_ROOT / "o365-full-allowlist.txt",
+    "minimal": REPO_ROOT / "o365" / "o365-minimal-allowlist.txt",
+    "sane": REPO_ROOT / "o365" / "o365-sane-allowlist.txt",
+    "full": REPO_ROOT / "o365" / "o365-full-allowlist.txt",
+}
+MANUAL_LIST_SPECS = {
+    "github": REPO_ROOT / "github" / "github-allowlist.txt",
+    "google": REPO_ROOT / "google" / "google-allowlist.txt",
+    "okta": REPO_ROOT / "okta" / "okta-allowlist.txt",
 }
 METADATA_PATH = DATA_DIR / "m365-endpoint-metadata.json"
 
@@ -350,6 +355,9 @@ def validate_existing_files() -> None:
     for name, path in LIST_SPECS.items():
         required = MINIMAL_DOMAINS if name == "minimal" else SANE_DOMAINS if name == "sane" else None
         validate_file_content(name, path.read_text(encoding="utf-8"), required_domains=required)
+    for name, path in MANUAL_LIST_SPECS.items():
+        if path.exists():
+            validate_file_content(name, path.read_text(encoding="utf-8"))
 
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
@@ -389,7 +397,6 @@ def main(argv: Sequence[str]) -> int:
             else:
                 changed = write_if_changed(path, content) or changed
 
-        metadata = load_metadata()
         next_metadata = metadata_content(fetch_result.version)
         if args.check:
             existing = METADATA_PATH.read_text(encoding="utf-8") if METADATA_PATH.exists() else ""

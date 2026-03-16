@@ -2,14 +2,15 @@
 ! Goal: keep GitHub web, API, assets, and common download flows working
 ! Scope: conservative core coverage for github.com, API, static assets, user content, Pages, and release/download endpoints
 ! Format: Adblock exception rules
+! Last Updated: 2026-03-15
 
-@@||github.com^
 @@||api.github.com^
+@@||codeload.github.com^
+@@||github-releases.githubusercontent.com^
+@@||github.com^
 @@||github.dev^
 @@||github.io^
 @@||githubassets.com^
 @@||githubusercontent.com^
-@@||codeload.github.com^
 @@||objects.githubusercontent.com^
-@@||github-releases.githubusercontent.com^
 @@||release-assets.githubusercontent.com^

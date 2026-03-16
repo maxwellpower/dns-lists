@@ -1,0 +1,16 @@
+! Google allowlist for Pi-hole
+! Goal: Allow a conservative set of Google, Firebase, and Google Workspace domains that are commonly needed
+! for sign-in, APIs, static assets, Firebase Hosting, and mobile app notification flows
+! Format: Adblock exception rules
+! Last Updated: 2026-03-16
+
+@@||accounts.google.com^
+@@||android.apis.google.com^
+@@||fcm.googleapis.com^
+@@||firebaseapp.com^
+@@||googleadservices.com^
+@@||googleapis.com^
+@@||googleusercontent.com^
+@@||gstatic.com^
+@@||mtalk.google.com^
+@@||web.app^

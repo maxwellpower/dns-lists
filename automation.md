@@ -1,34 +1,40 @@
-# Automation Plan for O365 Allow Lists
+# Automation Plan for DNS Lists
 
 This file is the long-term working note for humans, Codex, ChatGPT, and other agents that need to maintain or extend this repository.
 
 It describes:
 - the purpose of the repository
-- the expected output files
-- the desired automation behaviour
-- the update rules and safeguards
-- the implementation plan for GitHub Actions
+- which files are automated versus manual
+- the O365 update and validation rules
+- the GitHub Actions behaviour
 - the assumptions future agents should preserve
 
 ---
 
 ## Repository purpose
 
-This repository publishes Microsoft 365 / Office 365 allow lists in adblock-style exception format for Pi-hole and similar systems.
+This repository publishes DNS allow lists in adblock-style exception format for Pi-hole and similar systems.
 
-The repository currently maintains three list tiers:
-- `o365-minimal-allowlist.txt`
-- `o365-sane-allowlist.txt`
-- `o365-full-allowlist.txt`
+The main managed scope is Microsoft 365 under `o365/`.
 
-These files are intended to be consumed directly as hosted subscribed lists.
+The repository currently maintains:
+- `o365/o365-minimal-allowlist.txt`
+- `o365/o365-sane-allowlist.txt`
+- `o365/o365-full-allowlist.txt`
+- `github/github-allowlist.txt`
+- `google/google-allowlist.txt`
+- `okta/okta-allowlist.txt`
+
+The O365 files are the primary public outputs and are intended to be consumed directly as hosted subscribed lists.
+
+The GitHub, Google, and Okta files are small manual sidecars that are useful in practice but are not the primary automation target.
 
 ---
 
-## Current file roles
+## File roles
 
-### `o365-minimal-allowlist.txt`
-Smallest allow list.
+### `o365/o365-minimal-allowlist.txt`
+Smallest O365 allow list.
 
 Purpose:
 - allow sign-in
@@ -38,8 +44,8 @@ Purpose:
 
 This list should stay intentionally narrow.
 
-### `o365-sane-allowlist.txt`
-Recommended default list.
+### `o365/o365-sane-allowlist.txt`
+Recommended default O365 list.
 
 Purpose:
 - keep Microsoft 365 working normally for most users
@@ -49,89 +55,84 @@ Purpose:
 
 This list should remain curated and conservative.
 
-### `o365-full-allowlist.txt`
-Maximum compatibility list.
+### `o365/o365-full-allowlist.txt`
+Maximum compatibility O365 list.
 
 Purpose:
 - include nearly everything needed or published for Microsoft 365 and related service compatibility
 - be useful for troubleshooting breakage caused by block lists
-- prioritise compatibility over strict minimisation
+- prioritize compatibility over strict minimization
 
 This list may be broader and more dynamic.
+
+### `github/github-allowlist.txt`
+Manual GitHub sidecar.
+
+Purpose:
+- keep core GitHub web, API, and asset flows working
+- stay intentionally conservative
+- avoid trying to model every GitHub-adjacent service
+
+### `okta/okta-allowlist.txt`
+Manual Okta sidecar.
+
+Purpose:
+- keep core Okta / Okta Verify flows working
+- remain small and practical
+- avoid turning into a full generic Okta network policy
+
+### `google/google-allowlist.txt`
+Manual Google sidecar.
+
+Purpose:
+- reduce common Google-service breakage caused by aggressive blocklists
+- cover practical Google identity, API, Firebase Hosting, and Firebase Cloud Messaging endpoints
+- stay intentionally conservative rather than becoming a full Google Workspace or Android policy list
 
 ---
 
 ## Automation goals
 
-We want a tight, maintainable, low-noise GitHub Actions workflow that:
+We want a tight, maintainable, low-noise GitHub Actions setup that:
 
-1. Regenerates or validates the allow lists on a schedule.
-2. Uses Microsoft endpoint data as the source for broad compatibility coverage.
-3. Preserves manual curation for the `minimal` and `sane` lists.
-4. Updates `full` automatically from upstream endpoint data.
+1. Regenerates or validates the O365 allow lists on a schedule.
+2. Uses Microsoft endpoint data as the source for broad O365 compatibility coverage.
+3. Preserves manual curation for the `minimal` and `sane` O365 lists.
+4. Updates `o365/o365-full-allowlist.txt` automatically from upstream endpoint data.
 5. Commits changes only when there is a real diff.
-6. Avoids unnecessary churn from ordering, duplicates, or formatting noise.
-7. Is safe for future agents to run repeatedly without widening the curated lists by accident.
+6. Avoids unnecessary churn from ordering, duplicates, formatting noise, or date-only changes.
+7. Is safe for future agents to run repeatedly without widening the curated O365 lists by accident.
+8. Validates manual sidecar lists without pretending they are automatically sourced from upstream providers.
 
 ---
 
-## Design principles
+## Managed versus manual
 
-### 1. Curated versus generated
-The three files are not all treated the same.
-
-#### `o365-minimal-allowlist.txt`
-This should be curated in code, not fully generated from upstream.
-
-Reason:
-- this file is opinionated
-- it is meant to stay small
-- upstream additions should not silently expand it
-
-#### `o365-sane-allowlist.txt`
-This should also be curated in code, not fully generated.
-
-Reason:
-- this is the recommended daily-use list
-- it needs stability
-- it should not grow every time Microsoft adds new optional infrastructure
-
-#### `o365-full-allowlist.txt`
-This should be generated from Microsoft endpoint data, with normalisation and cleanup.
-
-Reason:
-- this file is specifically for broad compatibility
-- it benefits most from automation
-- it should track Microsoft changes over time
-
----
-
-## Implemented automation
-
-The repository now includes:
-
-- `scripts/generate_o365_lists.py`
-- `tests/test_generate_o365_lists.py`
-- `.github/workflows/update-o365-lists.yml`
-- `.github/workflows/validate-o365-lists.yml`
+### Managed by automation
+- `o365/o365-minimal-allowlist.txt`
+- `o365/o365-sane-allowlist.txt`
+- `o365/o365-full-allowlist.txt`
 - `data/m365-endpoint-metadata.json`
-- this `automation.md` file as the operational spec
+
+### Manual but validated
+- `github/github-allowlist.txt`
+- `google/google-allowlist.txt`
+- `okta/okta-allowlist.txt`
 
 Current model:
 - `minimal` is generated from fixed curated constants
 - `sane` is generated from fixed curated constants
 - `full` is generated from the official Microsoft 365 endpoint web service
+- GitHub, Google, and Okta lists are maintained by hand
 - CI validates structure and formatting on every push and pull request
-- the scheduled workflow refreshes upstream-derived data weekly and commits only when content changes
+- the scheduled workflow refreshes upstream-derived O365 data weekly and commits only when content changes
 
 ---
 
 ## Source of truth
 
-### Primary upstream source
-Use Microsoft's published Microsoft 365 endpoint source, derived from the official Microsoft 365 endpoint data / web service.
-
-The automation should fetch the current endpoint data and extract domain-based destinations.
+### Primary upstream source for O365
+Use Microsoft's published Microsoft 365 endpoint source, derived from the official Microsoft 365 endpoint web service.
 
 Current implementation details:
 - instance: `Worldwide`
@@ -156,7 +157,7 @@ Do not keep:
 
 ## Output format requirements
 
-All generated lists must use adblock-style exception rules in this exact general form:
+All public list files must use adblock-style exception rules in this general form:
 
 ```txt
 @@||office.com^
@@ -170,11 +171,11 @@ Rules:
 - stable sorted order
 - Unix newlines
 - short header comments allowed
-- no regex format in these public list files
+- no regex format in the public list files
 
 ---
 
-## Normalisation rules
+## Normalization rules
 
 When generating or validating domains, apply the following rules.
 
@@ -190,48 +191,25 @@ When generating or validating domains, apply the following rules.
 
 ### Deduplication
 - dedupe exact duplicates
-- if a broader parent domain already covers a more specific subdomain for the purposes of the full list, the implementation may collapse to the broader entry when safe and intentional
-- do not over-collapse if the broader domain would meaningfully widen the list beyond what upstream specified unless that is explicitly desired for compatibility
+- keep stable ordering
+- do not widen curated O365 lists based on upstream changes alone
 
 ### Safety
-- never emit raw regex into the allow list files
+- never emit raw regex into allow list files
 - never emit IP addresses into these list files
 - never emit invalid hostname syntax
 
 ---
 
-## Curated domain sets
+## Curated O365 domain sets
 
-The automation should keep the curated lists as explicit constant sets inside the generator script.
+The automation should keep the curated O365 lists as explicit constant sets inside the generator script.
 
 ### Minimal list policy
 This list should stay limited to:
 - Microsoft identity and authentication
 - Outlook / Exchange core access
 - tenant routing / modern Microsoft service entry points that are required even for basic use
-
-Current intended entries:
-
-```txt
-aadcdn.microsoftonline-p.com
-aka.ms
-cloud.microsoft
-live.com
-login.live.com
-mail.protection.outlook.com
-microsoftonline.com
-microsoftonline-p.com
-msauth.net
-msauthimages.net
-msftidentity.com
-office.com
-office365.com
-onmicrosoft.com
-outlook.com
-outlook.office.com
-outlook.office365.com
-protection.outlook.com
-```
 
 ### Sane list policy
 This list should include the minimal/core service set plus the main domains needed for:
@@ -241,46 +219,6 @@ This list should include the minimal/core service set plus the main domains need
 - Office web apps
 - newer Microsoft cloud-hosted service front ends
 
-Current intended entries:
-
-```txt
-aadcdn.microsoftonline-p.com
-aka.ms
-cloud.microsoft
-config.office.com
-live.com
-login.live.com
-lync.com
-mail.protection.outlook.com
-microsoft365.com
-microsoftonline.com
-microsoftonline-p.com
-msauth.net
-msauthimages.net
-msftidentity.com
-office.com
-office.live.com
-office.net
-office365.com
-officeapps.live.com
-officecdn.microsoft.com
-onmicrosoft.com
-onedrive.com
-onenote.com
-outlook.com
-outlook.office.com
-outlook.office365.com
-protection.outlook.com
-sharepoint.com
-sharepointonline.com
-skype.com
-skypeforbusiness.com
-static.microsoft
-storage.live.com
-teams.microsoft.com
-usercontent.microsoft
-```
-
 ### Rule for future agents
 Future agents must not silently add new domains to `minimal` or `sane` just because the upstream Microsoft endpoint source changed.
 
@@ -288,19 +226,20 @@ Any change to those curated sets should be intentional and explained in a commit
 
 ---
 
-## Full list generation policy
+## Full O365 list generation policy
 
-The `o365-full-allowlist.txt` file should be regenerated automatically from upstream domain data.
+The `o365/o365-full-allowlist.txt` file should be regenerated automatically from upstream domain data.
 
-Suggested behaviour:
+Suggested behavior:
 
 1. Fetch upstream endpoint data.
 2. Extract domain-like entries.
-3. Normalise and clean them.
-4. Remove IPs and non-domain artefacts.
+3. Normalize and clean them.
+4. Remove IPs and non-domain artifacts.
 5. Convert each valid domain into adblock exception syntax.
 6. Sort deterministically.
 7. Write the file with a short explanatory header.
+8. Preserve `Last Updated` unless the actual rule content changed.
 
 ### Full list bias
 When uncertain, prefer compatibility over minimalism for the full list.
@@ -323,105 +262,57 @@ The generator or validator should check at minimum:
 - no IP address lines are present
 - files are sorted and deduplicated
 - required curated entries remain present in `minimal` and `sane`
+- manual sidecar lists still conform to the same adblock-style allowlist format
 
 If validation fails, the workflow should fail.
 
 ---
 
-## GitHub Actions behaviour
+## GitHub Actions behavior
 
-We now use two workflows with distinct responsibilities.
+We use two workflows with distinct responsibilities.
 
 Files:
-- `.github/workflows/update-o365-lists.yml`
-- `.github/workflows/validate-o365-lists.yml`
+- `.github/workflows/update-dns-lists.yml`
+- `.github/workflows/validate-dns-lists.yml`
 
-Update workflow triggers:
+### Update workflow
+Triggers:
 - `workflow_dispatch`
 - scheduled weekly run
 
-Update workflow behaviour:
+Behavior:
 1. Check out the repository.
 2. Set up Python.
 3. Run unit tests.
 4. Run the generator script.
-5. Validate generated files.
-6. Commit changes only if tracked files changed.
+5. Validate the tracked allowlist files, including manual sidecars.
+6. Commit changes only if managed O365 files changed.
 7. Push back to the default branch.
 
-Validation workflow triggers:
+### Validation workflow
+Triggers:
 - `push`
 - `pull_request`
 
-Validation workflow behaviour:
+Behavior:
 1. Check out the repository.
 2. Set up Python.
 3. Run unit tests.
-4. Validate the tracked allowlist files.
-
-### Churn control
-The workflow should avoid noisy commits.
-
-Requirements:
-- stable ordering
-- no timestamp banners in output files
-- no generated-on dates in the list files
-- commit only when file contents actually changed
-
----
-
-The workflow files in the repo are now the source of truth. Keep them simple, dependency-light, and deterministic.
-
----
-
-## Generator script expectations
-
-The future `scripts/generate_o365_lists.py` should:
-
-1. Fetch endpoint data.
-2. Parse all endpoint records.
-3. Extract domains from URL/domain destination fields.
-4. Normalise and clean the domains.
-5. Build:
-   - `minimal` from fixed curated constants
-   - `sane` from fixed curated constants
-   - `full` from upstream-derived cleaned domains
-6. Render all files in stable adblock exception format.
-7. Optionally validate file integrity before writing.
-
-### Suggested internal structure
-
-- `fetch_upstream_data()`
-- `extract_domains(records)`
-- `normalise_domain(domain)`
-- `render_adblock_rules(domains, header_lines)`
-- `validate_output(lines)`
-- `write_if_changed(path, content)`
+4. Validate the tracked allowlist files, including manual sidecars.
 
 ---
 
 ## README handling
 
 The README is hand-written and documents:
-- list roles
-- automation behaviour
+- repo layout
+- O365 list roles
+- managed versus manual scope
+- automation behavior
 - local usage commands
 
 The automation does not rewrite `README.md`.
-
----
-
-## Agent instructions
-
-If an LLM, Codex instance, or other agent is asked to modify this repo later, it should follow these rules:
-
-1. Do not widen `minimal` casually.
-2. Do not widen `sane` casually.
-3. Treat `full` as the only automatically expansive list.
-4. Preserve adblock exception output format.
-5. Prefer stable, low-noise changes.
-6. Do not switch the public list files back to regex format.
-7. Keep this file updated when the automation design changes.
 
 ---
 
@@ -429,35 +320,22 @@ If an LLM, Codex instance, or other agent is asked to modify this repo later, it
 
 The current repo now supports:
 
-- regenerating `o365-full-allowlist.txt` from upstream Microsoft endpoint data
-- regenerating `o365-minimal-allowlist.txt` from curated constants
-- regenerating `o365-sane-allowlist.txt` from curated constants
-- validating all three files
+- regenerating `o365/o365-full-allowlist.txt` from upstream Microsoft endpoint data
+- regenerating `o365/o365-minimal-allowlist.txt` from curated constants
+- regenerating `o365/o365-sane-allowlist.txt` from curated constants
+- validating all managed and manual list files
 - running manually in GitHub Actions
-- running weekly scheduled updates
+- running weekly scheduled O365 updates
 - unit testing the normalization and validation logic
-- committing only when generated content changes
+- committing only when managed generated content changes
 
 ---
 
 ## Later improvements
 
 Possible later additions:
-
 - open a PR instead of pushing directly
 - schema validation for upstream endpoint fields
 - optional diff summary in workflow logs
 - optional issue creation if upstream fetch fails repeatedly
-- optional support for additional list formats if ever needed
-
----
-
-## Current repository check snapshot
-
-At the time this file was written, the intended starting state is:
-
-- `o365-minimal-allowlist.txt`: curated and narrow
-- `o365-sane-allowlist.txt`: curated and recommended default
-- `o365-full-allowlist.txt`: broad compatibility list in adblock exception format
-
-If future agents find duplicates, malformed escaped domains, regex remnants, or file-role confusion, they should correct those issues before expanding automation.
+- provider-specific manual validators if the sidecar list count grows

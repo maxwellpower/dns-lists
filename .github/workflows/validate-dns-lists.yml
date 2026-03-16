@@ -1,4 +1,4 @@
-name: Validate O365 Allowlists
+name: Validate DNS Lists
 
 on:
   pull_request:
