@@ -1,8 +1,10 @@
 import unittest
 
 from scripts.generate_o365_lists import (
+    GITHUB_CORE_EXTRA_DOMAINS,
     MINIMAL_DOMAINS,
     SANE_DOMAINS,
+    extract_github_domains,
     extract_last_updated,
     normalise_domain,
     render_allowlist,
@@ -44,6 +46,34 @@ class ValidateFileContentTests(unittest.TestCase):
         rendered = render_allowlist({"example.com"}, ["header"], "2026-03-15")
         self.assertEqual(extract_last_updated(rendered), "2026-03-15")
         self.assertNotIn("Last Updated", strip_last_updated(rendered))
+
+
+class GitHubMetaTests(unittest.TestCase):
+    def test_extracts_core_domains_from_meta_payload(self):
+        payload = {
+            "domains": {
+                "website": [
+                    "*.github.com",
+                    "*.github.dev",
+                    "*.githubusercontent.com",
+                ],
+                "actions_inbound": {
+                    "full_domains": [
+                        "api.github.com",
+                        "codeload.github.com",
+                        "github-registry-files.githubusercontent.com",
+                    ]
+                },
+            }
+        }
+        domains = extract_github_domains(payload)
+        self.assertIn("github.com", domains)
+        self.assertIn("github.dev", domains)
+        self.assertIn("githubusercontent.com", domains)
+        self.assertIn("api.github.com", domains)
+        self.assertIn("codeload.github.com", domains)
+        self.assertNotIn("github-registry-files.githubusercontent.com", domains)
+        self.assertIn("api.github.com", GITHUB_CORE_EXTRA_DOMAINS)
 
 
 if __name__ == "__main__":

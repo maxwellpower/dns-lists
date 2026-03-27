@@ -5,7 +5,7 @@ This file is the long-term working note for humans, Codex, ChatGPT, and other ag
 It describes:
 - the purpose of the repository
 - which files are automated versus manual
-- the O365 update and validation rules
+- the O365 and GitHub update and validation rules
 - the GitHub Actions behaviour
 - the assumptions future agents should preserve
 
@@ -15,7 +15,7 @@ It describes:
 
 This repository publishes DNS allow lists in adblock-style exception format for Pi-hole and similar systems.
 
-The main managed scope is Microsoft 365 under `o365/`.
+The main managed scopes are Microsoft 365 under `o365/` and the GitHub core sidecar under `github/`.
 
 The repository currently maintains:
 - `o365/o365-minimal-allowlist.txt`
@@ -27,7 +27,7 @@ The repository currently maintains:
 
 The O365 files are the primary public outputs and are intended to be consumed directly as hosted subscribed lists.
 
-The GitHub, Google, and Okta files are small manual sidecars that are useful in practice but are not the primary automation target.
+The Google and Okta files are small manual sidecars that are useful in practice but are not the primary automation target.
 
 ---
 
@@ -66,20 +66,12 @@ Purpose:
 This list may be broader and more dynamic.
 
 ### `github/github-allowlist.txt`
-Manual GitHub sidecar.
+Managed GitHub sidecar.
 
 Purpose:
 - keep core GitHub web, API, and asset flows working
 - stay intentionally conservative
 - avoid trying to model every GitHub-adjacent service
-
-### `okta/okta-allowlist.txt`
-Manual Okta sidecar.
-
-Purpose:
-- keep core Okta / Okta Verify flows working
-- remain small and practical
-- avoid turning into a full generic Okta network policy
 
 ### `google/google-allowlist.txt`
 Manual Google sidecar.
@@ -89,6 +81,14 @@ Purpose:
 - cover practical Google identity, API, Firebase Hosting, and Firebase Cloud Messaging endpoints
 - stay intentionally conservative rather than becoming a full Google Workspace or Android policy list
 
+### `okta/okta-allowlist.txt`
+Manual Okta sidecar.
+
+Purpose:
+- keep core Okta / Okta Verify flows working
+- remain small and practical
+- avoid turning into a full generic Okta network policy
+
 ---
 
 ## Automation goals
@@ -97,12 +97,14 @@ We want a tight, maintainable, low-noise GitHub Actions setup that:
 
 1. Regenerates or validates the O365 allow lists on a schedule.
 2. Uses Microsoft endpoint data as the source for broad O365 compatibility coverage.
-3. Preserves manual curation for the `minimal` and `sane` O365 lists.
-4. Updates `o365/o365-full-allowlist.txt` automatically from upstream endpoint data.
-5. Commits changes only when there is a real diff.
-6. Avoids unnecessary churn from ordering, duplicates, formatting noise, or date-only changes.
-7. Is safe for future agents to run repeatedly without widening the curated O365 lists by accident.
-8. Validates manual sidecar lists without pretending they are automatically sourced from upstream providers.
+3. Uses the GitHub meta API as the source for the GitHub core sidecar.
+4. Preserves manual curation for the `minimal` and `sane` O365 lists.
+5. Updates `o365/o365-full-allowlist.txt` automatically from upstream endpoint data.
+6. Updates `github/github-allowlist.txt` automatically from the GitHub meta API.
+7. Commits changes only when there is a real diff.
+8. Avoids unnecessary churn from ordering, duplicates, formatting noise, or date-only changes.
+9. Is safe for future agents to run repeatedly without widening the curated O365 lists by accident.
+10. Validates manual sidecar lists without pretending they are automatically sourced from upstream providers.
 
 ---
 
@@ -112,10 +114,11 @@ We want a tight, maintainable, low-noise GitHub Actions setup that:
 - `o365/o365-minimal-allowlist.txt`
 - `o365/o365-sane-allowlist.txt`
 - `o365/o365-full-allowlist.txt`
+- `github/github-allowlist.txt`
 - `data/m365-endpoint-metadata.json`
+- `data/github-meta-metadata.json`
 
 ### Manual but validated
-- `github/github-allowlist.txt`
 - `google/google-allowlist.txt`
 - `okta/okta-allowlist.txt`
 
@@ -123,9 +126,10 @@ Current model:
 - `minimal` is generated from fixed curated constants
 - `sane` is generated from fixed curated constants
 - `full` is generated from the official Microsoft 365 endpoint web service
-- GitHub, Google, and Okta lists are maintained by hand
+- the GitHub core sidecar is generated from the GitHub meta API website domains plus selected core API/download endpoints
+- Google and Okta lists are maintained by hand
 - CI validates structure and formatting on every push and pull request
-- the scheduled workflow refreshes upstream-derived O365 data weekly and commits only when content changes
+- the scheduled workflow refreshes upstream-derived O365 and GitHub data weekly and commits only when content changes
 
 ---
 
@@ -139,6 +143,14 @@ Current implementation details:
 - version endpoint: `https://endpoints.office.com/version/Worldwide`
 - data endpoint: `https://endpoints.office.com/endpoints/Worldwide`
 - stable `ClientRequestId`: `3f7f7d83-f9b9-4f6b-8c8d-3d4e6db245e1`
+
+### Primary upstream source for GitHub
+Use GitHub's meta API for the GitHub core sidecar.
+
+Current implementation details:
+- endpoint: `https://api.github.com/meta`
+- always include the `domains.website` domain group
+- additionally include a curated subset of core API and download endpoints when present
 
 ### What to extract
 Extract:
@@ -251,6 +263,25 @@ However:
 
 ---
 
+## GitHub core list generation policy
+
+The `github/github-allowlist.txt` file should be regenerated automatically from the GitHub meta API.
+
+Suggested behavior:
+
+1. Fetch the meta payload.
+2. Extract the `domains.website` entries.
+3. Normalize wildcard domains into adblock-compatible domains.
+4. Add a curated subset of core API/download domains from `domains.actions_inbound.full_domains`.
+5. Sort deterministically.
+6. Write the file with a short explanatory header.
+7. Preserve `Last Updated` unless the actual rule content changed.
+
+### GitHub list bias
+When uncertain, prefer core GitHub usability without automatically widening into Actions, Packages, Codespaces, or Copilot coverage.
+
+---
+
 ## Validation requirements
 
 The generator or validator should check at minimum:
@@ -287,7 +318,7 @@ Behavior:
 3. Run unit tests.
 4. Run the generator script.
 5. Validate the tracked allowlist files, including manual sidecars.
-6. Commit changes only if managed O365 files changed.
+6. Commit changes only if managed O365 or GitHub files changed.
 7. Push back to the default branch.
 
 ### Validation workflow
@@ -323,9 +354,10 @@ The current repo now supports:
 - regenerating `o365/o365-full-allowlist.txt` from upstream Microsoft endpoint data
 - regenerating `o365/o365-minimal-allowlist.txt` from curated constants
 - regenerating `o365/o365-sane-allowlist.txt` from curated constants
+- regenerating `github/github-allowlist.txt` from the GitHub meta API
 - validating all managed and manual list files
 - running manually in GitHub Actions
-- running weekly scheduled O365 updates
+- running weekly scheduled O365 and GitHub updates
 - unit testing the normalization and validation logic
 - committing only when managed generated content changes
 
@@ -338,4 +370,3 @@ Possible later additions:
 - schema validation for upstream endpoint fields
 - optional diff summary in workflow logs
 - optional issue creation if upstream fetch fails repeatedly
-- provider-specific manual validators if the sidecar list count grows

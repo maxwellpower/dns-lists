@@ -1,16 +1,18 @@
 ! GitHub core allowlist for Pi-hole
 ! Goal: keep GitHub web, API, assets, and common download flows working
-! Scope: conservative core coverage for github.com, API, static assets, user content, Pages, and release/download endpoints
+! Scope: generated from the GitHub meta API website domains plus selected core API/download endpoints
 ! Format: Adblock exception rules
-! Last Updated: 2026-03-15
+! Last Updated: 2026-03-27
 
 @@||api.github.com^
 @@||codeload.github.com^
+@@||gh.io^
 @@||github-releases.githubusercontent.com^
 @@||github.com^
 @@||github.dev^
 @@||github.io^
 @@||githubassets.com^
 @@||githubusercontent.com^
+@@||objects-origin.githubusercontent.com^
 @@||objects.githubusercontent.com^
 @@||release-assets.githubusercontent.com^

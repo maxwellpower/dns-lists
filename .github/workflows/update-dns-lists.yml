@@ -29,7 +29,7 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests
 
-      - name: Regenerate managed O365 allowlists
+      - name: Regenerate managed allowlists
         run: python scripts/generate_o365_lists.py
 
       - name: Validate tracked allowlists
@@ -39,7 +39,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/m365-endpoint-metadata.json o365/*.txt
+          git add data/m365-endpoint-metadata.json data/github-meta-metadata.json github/github-allowlist.txt o365/*.txt
           git diff --cached --quiet && exit 0
-          git commit -m "Update managed O365 DNS lists"
+          git commit -m "Update managed DNS lists"
           git push

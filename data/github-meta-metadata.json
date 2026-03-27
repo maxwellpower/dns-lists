@@ -1,0 +1,16 @@
+{
+  "source": "https://api.github.com/meta",
+  "domainGroups": [
+    "website"
+  ],
+  "extraDomains": [
+    "api.github.com",
+    "codeload.github.com",
+    "gh.io",
+    "github-releases.githubusercontent.com",
+    "objects-origin.githubusercontent.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com"
+  ],
+  "generatedDomainCount": 12
+}

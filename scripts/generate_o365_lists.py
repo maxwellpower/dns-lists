@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate managed Microsoft 365 DNS allow lists and validate repo lists."""
+"""Generate managed DNS allow lists and validate repo lists."""
 
 from __future__ import annotations
 
@@ -18,17 +18,18 @@ from typing import Iterable, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
-LIST_SPECS = {
+O365_LIST_SPECS = {
     "minimal": REPO_ROOT / "o365" / "o365-minimal-allowlist.txt",
     "sane": REPO_ROOT / "o365" / "o365-sane-allowlist.txt",
     "full": REPO_ROOT / "o365" / "o365-full-allowlist.txt",
 }
+GITHUB_LIST_PATH = REPO_ROOT / "github" / "github-allowlist.txt"
 MANUAL_LIST_SPECS = {
-    "github": REPO_ROOT / "github" / "github-allowlist.txt",
     "google": REPO_ROOT / "google" / "google-allowlist.txt",
     "okta": REPO_ROOT / "okta" / "okta-allowlist.txt",
 }
-METADATA_PATH = DATA_DIR / "m365-endpoint-metadata.json"
+M365_METADATA_PATH = DATA_DIR / "m365-endpoint-metadata.json"
+GITHUB_METADATA_PATH = DATA_DIR / "github-meta-metadata.json"
 
 CLIENT_REQUEST_ID = "3f7f7d83-f9b9-4f6b-8c8d-3d4e6db245e1"
 INSTANCE = "Worldwide"
@@ -40,6 +41,7 @@ ENDPOINTS_URL = (
     f"https://endpoints.office.com/endpoints/{INSTANCE}"
     f"?ClientRequestId={CLIENT_REQUEST_ID}&NoIPv6=true"
 )
+GITHUB_META_URL = "https://api.github.com/meta"
 
 DOMAIN_RE = re.compile(
     r"^(?=.{1,253}$)(?!-)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?"
@@ -107,6 +109,17 @@ SANE_DOMAINS = {
     "usercontent.microsoft",
 }
 
+GITHUB_CORE_DOMAIN_GROUPS = ("website",)
+GITHUB_CORE_EXTRA_DOMAINS = {
+    "api.github.com",
+    "codeload.github.com",
+    "gh.io",
+    "github-releases.githubusercontent.com",
+    "objects-origin.githubusercontent.com",
+    "objects.githubusercontent.com",
+    "release-assets.githubusercontent.com",
+}
+
 
 class ValidationError(Exception):
     """Raised when a generated allowlist fails validation."""
@@ -123,7 +136,7 @@ def fetch_json(url: str) -> object:
         url,
         headers={
             "Accept": "application/json",
-            "User-Agent": "o365-allow-lists-generator/1.0",
+            "User-Agent": "dns-lists-generator/1.0",
         },
     )
     with urllib.request.urlopen(request, timeout=60) as response:
@@ -146,6 +159,13 @@ def fetch_upstream_data() -> FetchResult:
     return FetchResult(version=version, domains=domains)
 
 
+def fetch_github_meta() -> dict[str, object]:
+    payload = fetch_json(GITHUB_META_URL)
+    if not isinstance(payload, dict):
+        raise ValidationError("GitHub meta endpoint did not return an object")
+    return payload
+
+
 def extract_domains(records: Sequence[object]) -> set[str]:
     domains: set[str] = set()
     for record in records:
@@ -161,6 +181,39 @@ def extract_domains(records: Sequence[object]) -> set[str]:
     return domains
 
 
+def extract_github_domains(payload: dict[str, object]) -> set[str]:
+    domains: set[str] = set()
+    domain_groups = payload.get("domains", {})
+    if not isinstance(domain_groups, dict):
+        raise ValidationError("GitHub meta payload did not include a domains object")
+
+    for group_name in GITHUB_CORE_DOMAIN_GROUPS:
+        values = domain_groups.get(group_name, [])
+        if not isinstance(values, list):
+            continue
+        for raw_value in values:
+            normalised = normalise_domain(raw_value)
+            if normalised:
+                domains.add(normalised)
+
+    actions_inbound = domain_groups.get("actions_inbound", {})
+    if isinstance(actions_inbound, dict):
+        full_domains = actions_inbound.get("full_domains", [])
+        if isinstance(full_domains, list):
+            for raw_value in full_domains:
+                if isinstance(raw_value, str) and raw_value in GITHUB_CORE_EXTRA_DOMAINS:
+                    normalised = normalise_domain(raw_value)
+                    if normalised:
+                        domains.add(normalised)
+
+    for raw_value in GITHUB_CORE_EXTRA_DOMAINS:
+        normalised = normalise_domain(raw_value)
+        if normalised:
+            domains.add(normalised)
+
+    return domains
+
+
 def normalise_domain(raw_value: object) -> str | None:
     if not isinstance(raw_value, str):
         return None
@@ -168,23 +221,19 @@ def normalise_domain(raw_value: object) -> str | None:
     value = raw_value.strip().lower()
     if not value:
         return None
-
     if "://" in value:
         return None
 
     value = value.replace("\\-", "-").replace("\\.", ".").replace("\\*", "*")
     value = value.strip(".")
-
     if not value:
         return None
-
     if "/" in value or ":" in value or " " in value:
         return None
 
     while value.startswith("*.") or value.startswith("*"):
         value = value[2:] if value.startswith("*.") else value[1:]
         value = value.lstrip(".")
-
     if not value:
         return None
 
@@ -199,7 +248,6 @@ def normalise_domain(raw_value: object) -> str | None:
         return None
     if not DOMAIN_RE.match(value):
         return None
-
     return value
 
 
@@ -274,13 +322,7 @@ def write_if_changed(path: Path, content: str) -> bool:
     return True
 
 
-def load_metadata() -> dict[str, str]:
-    if not METADATA_PATH.exists():
-        return {}
-    return json.loads(METADATA_PATH.read_text(encoding="utf-8"))
-
-
-def metadata_content(version: str) -> str:
+def m365_metadata_content(version: str) -> str:
     payload = {
         "instance": INSTANCE,
         "clientRequestId": CLIENT_REQUEST_ID,
@@ -290,11 +332,21 @@ def metadata_content(version: str) -> str:
     return json.dumps(payload, indent=2) + "\n"
 
 
-def build_outputs(fetch_result: FetchResult, today: str | None = None) -> dict[str, str]:
+def github_metadata_content(domains: set[str]) -> str:
+    payload = {
+        "source": GITHUB_META_URL,
+        "domainGroups": list(GITHUB_CORE_DOMAIN_GROUPS),
+        "extraDomains": sorted(GITHUB_CORE_EXTRA_DOMAINS),
+        "generatedDomainCount": len(domains),
+    }
+    return json.dumps(payload, indent=2) + "\n"
+
+
+def build_o365_outputs(fetch_result: FetchResult, today: str | None = None) -> dict[str, str]:
     today = today or date.today().isoformat()
     existing_contents = {
         name: path.read_text(encoding="utf-8") if path.exists() else ""
-        for name, path in LIST_SPECS.items()
+        for name, path in O365_LIST_SPECS.items()
     }
     existing_dates = {
         name: extract_last_updated(content) or today
@@ -345,16 +397,34 @@ def build_outputs(fetch_result: FetchResult, today: str | None = None) -> dict[s
     return outputs
 
 
-def validate_outputs(outputs: dict[str, str]) -> None:
+def build_github_output(domains: set[str], today: str | None = None) -> str:
+    today = today or date.today().isoformat()
+    existing = GITHUB_LIST_PATH.read_text(encoding="utf-8") if GITHUB_LIST_PATH.exists() else ""
+    existing_date = extract_last_updated(existing) or today
+    header_lines = [
+        "GitHub core allowlist for Pi-hole",
+        "Goal: keep GitHub web, API, assets, and common download flows working",
+        "Scope: generated from the GitHub meta API website domains plus selected core API/download endpoints",
+        "Format: Adblock exception rules",
+    ]
+    candidate = render_allowlist(domains, header_lines, existing_date)
+    if strip_last_updated(existing) != strip_last_updated(candidate):
+        candidate = render_allowlist(domains, header_lines, today)
+    return candidate
+
+
+def validate_o365_outputs(outputs: dict[str, str]) -> None:
     validate_file_content("minimal", outputs["minimal"], required_domains=MINIMAL_DOMAINS)
     validate_file_content("sane", outputs["sane"], required_domains=SANE_DOMAINS)
     validate_file_content("full", outputs["full"])
 
 
 def validate_existing_files() -> None:
-    for name, path in LIST_SPECS.items():
+    for name, path in O365_LIST_SPECS.items():
         required = MINIMAL_DOMAINS if name == "minimal" else SANE_DOMAINS if name == "sane" else None
         validate_file_content(name, path.read_text(encoding="utf-8"), required_domains=required)
+    if GITHUB_LIST_PATH.exists():
+        validate_file_content("github", GITHUB_LIST_PATH.read_text(encoding="utf-8"))
     for name, path in MANUAL_LIST_SPECS.items():
         if path.exists():
             validate_file_content(name, path.read_text(encoding="utf-8"))
@@ -377,19 +447,23 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
-
     try:
         if args.validate_only:
             validate_existing_files()
             return 0
 
-        fetch_result = fetch_upstream_data()
-        outputs = build_outputs(fetch_result)
-        validate_outputs(outputs)
+        o365_result = fetch_upstream_data()
+        github_meta = fetch_github_meta()
+        github_domains = extract_github_domains(github_meta)
+
+        o365_outputs = build_o365_outputs(o365_result)
+        github_output = build_github_output(github_domains)
+        validate_o365_outputs(o365_outputs)
+        validate_file_content("github", github_output)
 
         changed = False
-        for name, content in outputs.items():
-            path = LIST_SPECS[name]
+        for name, content in o365_outputs.items():
+            path = O365_LIST_SPECS[name]
             if args.check:
                 existing = path.read_text(encoding="utf-8") if path.exists() else ""
                 if existing != content:
@@ -397,18 +471,39 @@ def main(argv: Sequence[str]) -> int:
             else:
                 changed = write_if_changed(path, content) or changed
 
-        next_metadata = metadata_content(fetch_result.version)
         if args.check:
-            existing = METADATA_PATH.read_text(encoding="utf-8") if METADATA_PATH.exists() else ""
-            if existing != next_metadata:
-                raise ValidationError(f"{METADATA_PATH.name} is out of date; run the generator")
+            existing = GITHUB_LIST_PATH.read_text(encoding="utf-8") if GITHUB_LIST_PATH.exists() else ""
+            if existing != github_output:
+                raise ValidationError(f"{GITHUB_LIST_PATH.name} is out of date; run the generator")
         else:
-            changed = write_if_changed(METADATA_PATH, next_metadata) or changed
+            changed = write_if_changed(GITHUB_LIST_PATH, github_output) or changed
+
+        m365_metadata = m365_metadata_content(o365_result.version)
+        if args.check:
+            existing = M365_METADATA_PATH.read_text(encoding="utf-8") if M365_METADATA_PATH.exists() else ""
+            if existing != m365_metadata:
+                raise ValidationError(f"{M365_METADATA_PATH.name} is out of date; run the generator")
+        else:
+            changed = write_if_changed(M365_METADATA_PATH, m365_metadata) or changed
+
+        github_metadata = github_metadata_content(github_domains)
+        if args.check:
+            existing = GITHUB_METADATA_PATH.read_text(encoding="utf-8") if GITHUB_METADATA_PATH.exists() else ""
+            if existing != github_metadata:
+                raise ValidationError(f"{GITHUB_METADATA_PATH.name} is out of date; run the generator")
+        else:
+            changed = write_if_changed(GITHUB_METADATA_PATH, github_metadata) or changed
 
         if changed:
-            print(f"Updated allowlists using Microsoft 365 endpoint version {fetch_result.version}.")
+            print(
+                "Updated managed lists using "
+                f"Microsoft 365 endpoint version {o365_result.version} and the GitHub meta API."
+            )
         else:
-            print(f"No content changes; Microsoft 365 endpoint version is {fetch_result.version}.")
+            print(
+                "No content changes; "
+                f"Microsoft 365 endpoint version is {o365_result.version} and GitHub meta matched."
+            )
         return 0
     except (OSError, urllib.error.URLError, ValidationError, json.JSONDecodeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
