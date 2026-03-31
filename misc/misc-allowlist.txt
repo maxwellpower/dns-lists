@@ -6,6 +6,7 @@
 @@||amemv.com^
 @@||byteicdn.com^
 @@||byteoversea.com^
+@@||ea.com^
 @@||facebook.com^
 @@||fb.com^
 @@||fbcdn.net^
@@ -17,12 +18,14 @@
 @@||minepi.com^
 @@||muscdn.com^
 @@||musical.ly^
+@@||origin.com^
 @@||rbxcdn.com^
 @@||roblox.com^
 @@||sc-cdn.net^
 @@||sc-static.net^
 @@||snapchat.com^
 @@||t.co^
+@@||thesims.com^
 @@||tiktok.com^
 @@||tiktokcdn.com^
 @@||tiktokv.com^

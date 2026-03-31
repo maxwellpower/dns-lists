@@ -26,7 +26,7 @@ O365_LIST_SPECS = {
 GITHUB_LIST_PATH = REPO_ROOT / "github" / "github-allowlist.txt"
 MANUAL_LIST_SPECS = {
     "google": REPO_ROOT / "google" / "google-allowlist.txt",
-    "misc": REPO_ROOT / "misc" / "misc_allowlist.txt",
+    "misc": REPO_ROOT / "misc" / "misc-allowlist.txt",
     "okta": REPO_ROOT / "okta" / "okta-allowlist.txt",
 }
 M365_METADATA_PATH = DATA_DIR / "m365-endpoint-metadata.json"

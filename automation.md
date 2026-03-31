@@ -23,7 +23,7 @@ The repository currently maintains:
 - `o365/o365-full-allowlist.txt`
 - `github/github-allowlist.txt`
 - `google/google-allowlist.txt`
-- `misc/misc_allowlist.txt`
+- `misc/misc-allowlist.txt`
 - `okta/okta-allowlist.txt`
 
 The O365 files are the primary public outputs and are intended to be consumed directly as hosted subscribed lists.
@@ -82,7 +82,7 @@ Purpose:
 - cover practical Google identity, API, Firebase Hosting, and Firebase Cloud Messaging endpoints
 - stay intentionally conservative rather than becoming a full Google Workspace or Android policy list
 
-### `misc/misc_allowlist.txt`
+### `misc/misc-allowlist.txt`
 Manual miscellaneous sidecar.
 
 Purpose:
@@ -129,7 +129,7 @@ We want a tight, maintainable, low-noise GitHub Actions setup that:
 
 ### Manual but validated
 - `google/google-allowlist.txt`
-- `misc/misc_allowlist.txt`
+- `misc/misc-allowlist.txt`
 - `okta/okta-allowlist.txt`
 
 Current model:

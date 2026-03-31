@@ -32,7 +32,7 @@ Current file:
 Manual miscellaneous sidecar lists.
 
 Current file:
-- `misc/misc_allowlist.txt`
+- `misc/misc-allowlist.txt`
 
 ### `okta/`
 Manual Okta sidecar lists.
