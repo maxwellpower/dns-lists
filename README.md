@@ -28,6 +28,12 @@ Manual Google sidecar lists.
 Current file:
 - `google/google-allowlist.txt`
 
+### `misc/`
+Manual miscellaneous sidecar lists.
+
+Current file:
+- `misc/misc_allowlist.txt`
+
 ### `okta/`
 Manual Okta sidecar lists.
 
@@ -117,9 +123,10 @@ Move to `o365/o365-full-allowlist.txt` if something is still breaking and you wa
 - These lists are intended as practical starting points, not a guarantee that every feature will work in every environment.
 - The managed automation scope is `o365/` plus `github/github-allowlist.txt`.
 - `minimal` and `sane` are intentionally hand-curated in code and are not widened automatically when Microsoft adds new endpoints.
-- `google/` and `okta/` are manual sidecars. They are validated in CI for format, but they are not fetched or rewritten by automation.
+- `google/`, `misc/`, and `okta/` are manual sidecars. They are validated in CI for format, but they are not fetched or rewritten by automation.
 - `github/github-allowlist.txt` is generated from the GitHub meta API website domains plus a curated subset of core API and download endpoints. It is still intentionally conservative and does not try to cover every GitHub-adjacent service such as Actions, Packages, Codespaces, or Copilot.
 - The Google sidecar is intentionally conservative. It aims to reduce common breakage around Google sign-in, Google APIs, Firebase Hosting, and Firebase Cloud Messaging, but it is not a complete Google Workspace or Android network policy.
+- The misc sidecar is for small practical domains that do not belong in a dedicated provider list. It should stay curated and compact.
 - Microsoft continues moving services onto newer domains such as `cloud.microsoft`, so the O365 lists will continue to evolve over time.
 
 ## Automation

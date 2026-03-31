@@ -23,11 +23,12 @@ The repository currently maintains:
 - `o365/o365-full-allowlist.txt`
 - `github/github-allowlist.txt`
 - `google/google-allowlist.txt`
+- `misc/misc_allowlist.txt`
 - `okta/okta-allowlist.txt`
 
 The O365 files are the primary public outputs and are intended to be consumed directly as hosted subscribed lists.
 
-The Google and Okta files are small manual sidecars that are useful in practice but are not the primary automation target.
+The Google, misc, and Okta files are small manual sidecars that are useful in practice but are not the primary automation target.
 
 ---
 
@@ -81,6 +82,14 @@ Purpose:
 - cover practical Google identity, API, Firebase Hosting, and Firebase Cloud Messaging endpoints
 - stay intentionally conservative rather than becoming a full Google Workspace or Android policy list
 
+### `misc/misc_allowlist.txt`
+Manual miscellaneous sidecar.
+
+Purpose:
+- hold small practical domains that do not fit the provider-specific lists
+- keep narrow one-off allowances out of the O365, GitHub, Google, and Okta lists
+- stay intentionally compact and manually curated
+
 ### `okta/okta-allowlist.txt`
 Manual Okta sidecar.
 
@@ -120,6 +129,7 @@ We want a tight, maintainable, low-noise GitHub Actions setup that:
 
 ### Manual but validated
 - `google/google-allowlist.txt`
+- `misc/misc_allowlist.txt`
 - `okta/okta-allowlist.txt`
 
 Current model:
@@ -127,7 +137,7 @@ Current model:
 - `sane` is generated from fixed curated constants
 - `full` is generated from the official Microsoft 365 endpoint web service
 - the GitHub core sidecar is generated from the GitHub meta API website domains plus selected core API/download endpoints
-- Google and Okta lists are maintained by hand
+- Google, misc, and Okta lists are maintained by hand
 - CI validates structure and formatting on every push and pull request
 - the scheduled workflow refreshes upstream-derived O365 and GitHub data weekly and commits only when content changes
 

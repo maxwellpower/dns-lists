@@ -8,7 +8,6 @@
 @@||android.apis.google.com^
 @@||fcm.googleapis.com^
 @@||firebaseapp.com^
-@@||googleadservices.com^
 @@||googleapis.com^
 @@||googleusercontent.com^
 @@||gstatic.com^

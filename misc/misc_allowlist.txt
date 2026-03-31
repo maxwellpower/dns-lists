@@ -1,0 +1,31 @@
+! Miscellaneous allowlist for Pi-hole
+! Goal: small manually curated domains that do not fit the provider-specific lists
+! Format: Adblock-style exception rules
+! Last Updated: 2026-03-31
+
+@@||amemv.com^
+@@||byteicdn.com^
+@@||byteoversea.com^
+@@||facebook.com^
+@@||fb.com^
+@@||fbcdn.net^
+@@||googleadservices.com^
+@@||instagram.com^
+@@||ipecho.com^
+@@||ipify.com^
+@@||ipinfo.com^
+@@||minepi.com^
+@@||muscdn.com^
+@@||musical.ly^
+@@||rbxcdn.com^
+@@||roblox.com^
+@@||sc-cdn.net^
+@@||sc-static.net^
+@@||snapchat.com^
+@@||t.co^
+@@||tiktok.com^
+@@||tiktokcdn.com^
+@@||tiktokv.com^
+@@||twimg.com^
+@@||twitter.com^
+@@||x.com^
