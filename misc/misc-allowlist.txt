@@ -1,7 +1,7 @@
 ! Miscellaneous allowlist for Pi-hole
-! Goal: small manually curated domains that do not fit the provider-specific lists
+! Goal: Small manually curated domains that do not fit the provider-specific lists
 ! Format: Adblock-style exception rules
-! Last Updated: 2026-03-31
+! Last Updated: 2026-04-01
 
 @@||amemv.com^
 @@||byteicdn.com^
@@ -12,9 +12,9 @@
 @@||fbcdn.net^
 @@||googleadservices.com^
 @@||instagram.com^
-@@||ipecho.com^
-@@||ipify.com^
-@@||ipinfo.com^
+@@||ipecho.net^
+@@||ipify.org^
+@@||ipinfo.io^
 @@||minepi.com^
 @@||muscdn.com^
 @@||musical.ly^
